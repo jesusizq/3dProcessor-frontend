@@ -1,38 +1,375 @@
-console.log("ui.js loaded");
+console.log("Enhanced UI utilities loaded");
 
-export function showError(message) {
-  alert(`Error: ${message}`);
+// Notification System
+let notificationId = 0;
+
+export function showNotification(message, type = "info", duration = 5000) {
+  const container = getNotificationContainer();
+  const notification = createNotificationElement(
+    message,
+    type,
+    ++notificationId
+  );
+
+  container.appendChild(notification);
+
+  // Animate in
+  setTimeout(() => {
+    notification.style.transform = "translateY(0)";
+    notification.style.opacity = "1";
+  }, 10);
+
+  // Auto remove
+  setTimeout(() => {
+    removeNotification(notification);
+  }, duration);
+
+  return notificationId;
 }
 
-export function showLoader() {
-  let loader = document.getElementById("loader");
-  if (!loader) {
-    loader = document.createElement("div");
-    loader.id = "loader";
-    loader.style.position = "fixed";
-    loader.style.top = "50%";
-    loader.style.left = "50%";
-    loader.style.transform = "translate(-50%, -50%)";
-    loader.style.border = "16px solid #f3f3f3";
-    loader.style.borderTop = "16px solid #3498db";
-    loader.style.borderRadius = "50%";
-    loader.style.width = "120px";
-    loader.style.height = "120px";
-    loader.style.animation = "spin 2s linear infinite";
-    document.body.appendChild(loader);
+export function showError(message) {
+  return showNotification(message, "error", 7000);
+}
 
-    const keyframes = `@keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }`;
-    const styleSheet = document.createElement("style");
-    styleSheet.type = "text/css";
-    styleSheet.innerText = keyframes;
-    document.head.appendChild(styleSheet);
+export function showSuccess(message) {
+  return showNotification(message, "success", 4000);
+}
+
+export function showWarning(message) {
+  return showNotification(message, "warning", 5000);
+}
+
+function getNotificationContainer() {
+  let container = document.getElementById("notification-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "notification-container";
+    container.className = "notification-container";
+    document.body.appendChild(container);
   }
-  loader.style.display = "block";
+  return container;
+}
+
+function createNotificationElement(message, type, id) {
+  const notification = document.createElement("div");
+  notification.className = `notification ${type}`;
+  notification.style.transform = "translateY(-100%)";
+  notification.style.opacity = "0";
+  notification.style.transition = "all 0.3s ease-out";
+  notification.setAttribute("data-id", id);
+
+  const icon = getNotificationIcon(type);
+
+  notification.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <i class="${icon}" style="font-size: 1.125rem; color: var(--${
+    type === "error"
+      ? "error"
+      : type === "success"
+      ? "success"
+      : type === "warning"
+      ? "warning"
+      : "primary"
+  }-500);"></i>
+      <span style="flex: 1; font-weight: 500;">${message}</span>
+      <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 0.25rem; border-radius: 50%; transition: all 0.15s;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+
+  return notification;
+}
+
+function getNotificationIcon(type) {
+  switch (type) {
+    case "error":
+      return "fas fa-exclamation-circle";
+    case "success":
+      return "fas fa-check-circle";
+    case "warning":
+      return "fas fa-exclamation-triangle";
+    default:
+      return "fas fa-info-circle";
+  }
+}
+
+function removeNotification(notification) {
+  notification.style.transform = "translateY(-100%)";
+  notification.style.opacity = "0";
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 300);
+}
+
+// Loading System
+export function showLoader(message = "Processing...") {
+  const overlay = getLoadingOverlay();
+  const loadingText = overlay.querySelector(".loading-text");
+  if (loadingText) {
+    loadingText.textContent = message;
+  }
+  overlay.classList.add("active");
+  document.body.style.overflow = "hidden";
 }
 
 export function hideLoader() {
-  const loader = document.getElementById("loader");
-  if (loader) {
-    loader.style.display = "none";
+  const overlay = getLoadingOverlay();
+  overlay.classList.remove("active");
+  document.body.style.overflow = "";
+}
+
+function getLoadingOverlay() {
+  let overlay = document.getElementById("loading-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "loading-overlay";
+    overlay.className = "loading-overlay";
+    overlay.innerHTML = `
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Processing...</p>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  return overlay;
+}
+
+// Statistics Management
+export function updateStatistics(stats) {
+  updateStat("points-count", stats.points || 0);
+  updateStat("triangles-count", stats.triangles || 0);
+  updateStat("process-time", stats.processTime || "-");
+  updateStat("method-used", stats.method || "-");
+}
+
+export function updateStat(statId, value) {
+  const element = document.getElementById(statId);
+  if (element) {
+    // Add a subtle animation when updating
+    element.style.transform = "scale(1.1)";
+    element.style.transition = "transform 0.2s ease-out";
+
+    setTimeout(() => {
+      element.textContent = value;
+      element.style.transform = "scale(1)";
+    }, 100);
   }
 }
+
+// Status Management
+export function updateTriangulationStatus(status, type = "ready") {
+  const statusElement = document.getElementById("triangulation-status");
+  if (statusElement) {
+    statusElement.textContent = status;
+    statusElement.className = `status-indicator ${type}`;
+
+    // Update background color based on type
+    statusElement.style.background = getStatusColor(type);
+  }
+}
+
+function getStatusColor(type) {
+  switch (type) {
+    case "processing":
+      return "var(--warning-500)";
+    case "success":
+      return "var(--success-500)";
+    case "error":
+      return "var(--error-500)";
+    case "ready":
+    default:
+      return "var(--success-500)";
+  }
+}
+
+// Processing Indicators
+export function showProcessingIndicator(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (canvas) {
+    const container = canvas.closest(".canvas-container");
+    if (container) {
+      const overlay = container.querySelector(".canvas-overlay");
+      if (overlay) {
+        const indicator = overlay.querySelector(".processing-indicator");
+        if (indicator) {
+          indicator.classList.add("active");
+          overlay.style.opacity = "1";
+          overlay.style.pointerEvents = "auto";
+        }
+      }
+    }
+  }
+}
+
+export function hideProcessingIndicator(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (canvas) {
+    const container = canvas.closest(".canvas-container");
+    if (container) {
+      const overlay = container.querySelector(".canvas-overlay");
+      if (overlay) {
+        const indicator = overlay.querySelector(".processing-indicator");
+        if (indicator) {
+          indicator.classList.remove("active");
+          overlay.style.opacity = "";
+          overlay.style.pointerEvents = "";
+        }
+      }
+    }
+  }
+}
+
+// Enhanced File Upload Feedback
+export function updateFileUploadState(state, fileName = "") {
+  const label = document.querySelector(".file-upload-label");
+  const span = label?.querySelector("span");
+
+  if (!label || !span) return;
+
+  switch (state) {
+    case "uploading":
+      label.style.borderColor = "var(--warning-500)";
+      label.style.background = "var(--warning-50)";
+      span.textContent = "Processing file...";
+      break;
+    case "success":
+      label.style.borderColor = "var(--success-500)";
+      label.style.background = "var(--success-50)";
+      span.textContent = `Loaded: ${fileName}`;
+      setTimeout(() => resetFileUploadState(), 3000);
+      break;
+    case "error":
+      label.style.borderColor = "var(--error-500)";
+      label.style.background = "var(--error-50)";
+      span.textContent = "Upload failed";
+      setTimeout(() => resetFileUploadState(), 3000);
+      break;
+    default:
+      resetFileUploadState();
+  }
+}
+
+function resetFileUploadState() {
+  const label = document.querySelector(".file-upload-label");
+  const span = label?.querySelector("span");
+
+  if (label && span) {
+    label.style.borderColor = "";
+    label.style.background = "";
+    span.textContent = "Upload JSON Points";
+  }
+}
+
+// Button State Management
+export function setButtonLoading(buttonId, loading = true, originalText = "") {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+
+  if (loading) {
+    button.disabled = true;
+    button.style.opacity = "0.7";
+    button.style.cursor = "not-allowed";
+
+    const icon = button.querySelector("i");
+    if (icon) {
+      icon.className = "fas fa-spinner fa-spin";
+    }
+
+    const span = button.querySelector("span");
+    if (span) {
+      span.setAttribute("data-original-text", span.textContent);
+      span.textContent = "Processing...";
+    }
+  } else {
+    button.disabled = false;
+    button.style.opacity = "";
+    button.style.cursor = "";
+
+    const span = button.querySelector("span");
+    if (span) {
+      const originalText =
+        span.getAttribute("data-original-text") || originalText;
+      if (originalText) {
+        span.textContent = originalText;
+        span.removeAttribute("data-original-text");
+      }
+    }
+
+    // Restore original icon based on button ID
+    const icon = button.querySelector("i");
+    if (icon) {
+      if (buttonId === "triangulate-btn") {
+        icon.className = "fas fa-server";
+      } else if (buttonId === "triangulate-wasm-btn") {
+        icon.className = "fas fa-microchip";
+      } else if (buttonId === "reset-btn") {
+        icon.className = "fas fa-refresh";
+      }
+    }
+  }
+}
+
+// Canvas Instructions
+export function showCanvasInstructions(canvasId, show = true) {
+  const canvas = document.getElementById(canvasId);
+  if (canvas) {
+    const container = canvas.closest(".canvas-container");
+    if (container) {
+      const overlay = container.querySelector(".canvas-overlay");
+      if (overlay) {
+        if (show) {
+          overlay.style.opacity = "1";
+          overlay.style.visibility = "visible";
+        } else {
+          overlay.style.opacity = "0";
+          overlay.style.visibility = "hidden";
+        }
+      }
+    }
+  }
+}
+
+// Performance Monitoring
+let startTime = 0;
+
+export function startTimer() {
+  startTime = performance.now();
+}
+
+export function getElapsedTime() {
+  if (startTime === 0) return "0ms";
+  const elapsed = performance.now() - startTime;
+  startTime = 0; // Reset
+
+  if (elapsed < 1000) {
+    return `${Math.round(elapsed)}ms`;
+  } else {
+    return `${(elapsed / 1000).toFixed(2)}s`;
+  }
+}
+
+// Initialize Enhanced UI
+export function initializeEnhancedUI() {
+  // Add smooth scrolling to the page
+  document.documentElement.style.scrollBehavior = "smooth";
+
+  // Add focus styles for accessibility
+  const style = document.createElement("style");
+  style.textContent = `
+    *:focus-visible {
+      outline: 2px solid var(--primary-500);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+  `;
+  document.head.appendChild(style);
+
+  console.log("Enhanced UI initialized successfully");
+}
+
+// Call initialization when the module loads
+document.addEventListener("DOMContentLoaded", initializeEnhancedUI);
