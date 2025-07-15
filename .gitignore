@@ -93,11 +93,7 @@ jspm_packages/
 tmp/
 temp/
 
-# WebAssembly files (exclude generated WASM files but keep source)
+# WebAssembly files (generated files, can be rebuilt)
 wasm/*.wasm
 wasm/*.js
-wasm/*.d.ts
-
-# But keep our specific WASM module if it's committed
-!wasm/libtriangulation.wasm
-!wasm/libtriangulation.js 
+wasm/*.d.ts 
