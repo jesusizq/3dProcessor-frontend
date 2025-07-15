@@ -25,37 +25,39 @@ This is the frontend for the 3D Processor application. It's a WebGL-based client
 
 ### Prerequisites
 
+- **Docker** and **Docker Compose** (recommended)
 - Modern web browser with WebGL support
-- Local web server (required for ES6 modules and WASM)
-- Optional: mesh-processor backend service for server-side triangulation
+- Optional: Local web server for standalone development
 
-### Running the Application
+### Running with Docker (Recommended)
 
-1. **Start a local web server** (required for ES6 modules):
+The frontend is automatically built and deployed when running the full 3D Processor application:
 
-   ```bash
-   # Using Python
-   python -m http.server 8000
+```bash
+# From project root
+make up                    # Start all services
+# or
+./scripts/run.sh up        # Alternative method
 
-   # Using Node.js
-   npx http-server -p 8000
+# Access the application
+open http://localhost:3000
+```
 
-   # Using PHP
-   php -S localhost:8000
-   ```
+### Standalone Development
 
-2. **Open the application**:
+If you need to run just the frontend without Docker:
 
-   Navigate to `http://localhost:8000` in your web browser.
+```bash
+# Start a local web server (required for ES6 modules)
+python -m http.server 8000
+# or
+npx http-server -p 8000
 
-3. **Optional - Start backend service**:
+# Open in browser
+open http://localhost:8000
+```
 
-   For backend triangulation, ensure the mesh-processor service is running:
-
-   ```bash
-   # See mesh-processor/README.md for setup instructions
-   docker-compose up mesh-processor
-   ```
+**Note**: For full functionality, ensure the mesh-processor backend is running.
 
 ## How to Use
 
@@ -156,28 +158,47 @@ The WASM module is built from the C++ `libtriangulation` library:
 
 ## WebAssembly Module
 
-### Development Build
+### Docker Build (Recommended)
 
-If you have access to the `libtriangulation` source code:
+The WASM module is automatically built when using Docker:
 
 ```bash
-# Using the provided build script
+# From project root - WASM is built automatically
+make up
+# or
+make build-frontend
+```
+
+The Docker build process:
+
+1. Uses Emscripten SDK container to compile C++ to WASM
+2. Builds `libtriangulation.js` and `libtriangulation.wasm`
+3. Includes them in the final nginx image
+
+### Manual Development Build
+
+For local development without Docker:
+
+```bash
+# Using the provided build script (requires Emscripten SDK)
 ./build-wasm.sh
 
 # Or manual build
 cd ../libtriangulation
 mkdir build_wasm && cd build_wasm
-emcmake cmake .. -DBUILD_WASM=ON
+emcmake cmake .. -DBUILD_WASM=ON -DCMAKE_BUILD_TYPE=Release
 make
-cp liblibtriangulation.js ../frontend/wasm/libtriangulation.js
+cp libtriangulation.js ../frontend/wasm/
+cp libtriangulation.wasm ../frontend/wasm/
 ```
 
-### Production Deployment
+### Module Loading
 
-The WASM module is pre-built and included in the `wasm/` directory:
+The WASM module is loaded asynchronously in the browser:
 
-- `libtriangulation.js` - JavaScript wrapper and WASM binary
-- Module is loaded asynchronously with error handling
+- `libtriangulation.js` - JavaScript wrapper with embedded or separate WASM
+- `libtriangulation.wasm` - WebAssembly binary (if separate)
+- Graceful fallback to backend processing if WASM fails to load
 
 ## Backend Integration
 
@@ -190,7 +211,7 @@ The WASM module is pre-built and included in the `wasm/` directory:
 
 ### CORS and Development
 
-For local development, ensure the backend service allows CORS from `localhost:8000`.
+CORS is automatically configured in the Docker setup. For standalone development, the backend service allows CORS from all origins (`*`).
 
 ## Debugging
 

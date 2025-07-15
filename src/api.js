@@ -1,6 +1,10 @@
 console.log("api.js loaded");
 
-const MESH_PROCESSOR_URL = "http://localhost:8080";
+// Use environment-aware URL configuration
+const MESH_PROCESSOR_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8080" // Development
+    : "/api"; // Production (proxied through nginx)
 
 export async function triangulate(points) {
   try {
