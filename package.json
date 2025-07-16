@@ -1,0 +1,14 @@
+{
+  "name": "3d-processor-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for the 3D Processor application.",
+  "scripts": {
+    "build:wasm": "bash ./build-wasm.sh",
+    "start": "python3 -m http.server 8000"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.3",
+    "mitt": "^3.0.1",
+    "notyf": "^3.10.0"
+  }
+}

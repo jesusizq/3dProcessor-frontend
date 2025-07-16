@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <meta
+      name="description"
+      content="Advanced 3D polygon triangulation processor with real-time visualization"
+    />
+    <meta
+      name="author"
+      content="Jesús Izquierdo"
+    />
+    <title>3D Mesh Processor | Advanced Triangulation Platform</title>
+    <link
+      rel="stylesheet"
+      href="styles/style.css"
+    />
+    <link
+      rel="stylesheet"
+      href="node_modules/notyf/notyf.min.css"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <header class="header">
+      <div class="header-container">
+        <div class="logo">
+          <i class="fas fa-cube"></i>
+          <h1>3D Mesh Processor</h1>
+        </div>
+        <nav class="nav">
+          <span class="nav-item">Advanced Triangulation Platform</span>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Application -->
+    <main class="main">
+      <div class="app-container">
+        <!-- Hero Section -->
+        <section class="hero">
+          <div class="hero-content">
+            <h2 class="hero-title">Polygon Triangulation Visualizer</h2>
+            <p class="hero-subtitle">
+              Upload or draw polygons and see real-time triangulation using
+              backend API or WebAssembly
+            </p>
+          </div>
+
+          <!-- Control Panel -->
+          <div class="control-panel">
+            <div class="control-group">
+              <div class="file-upload-wrapper">
+                <input
+                  type="file"
+                  id="file-input"
+                  accept=".json"
+                  class="file-input"
+                />
+                <label
+                  for="file-input"
+                  class="file-upload-label"
+                >
+                  <i class="fas fa-upload"></i>
+                  <span>Upload JSON Points</span>
+                </label>
+              </div>
+
+              <div class="action-buttons">
+                <button
+                  id="triangulate-btn"
+                  class="btn btn-primary"
+                >
+                  <i class="fas fa-server"></i>
+                  <span>Backend Triangulation</span>
+                </button>
+                <button
+                  id="triangulate-wasm-btn"
+                  class="btn btn-secondary"
+                >
+                  <i class="fas fa-microchip"></i>
+                  <span>WASM Triangulation</span>
+                </button>
+                <button
+                  id="reset-btn"
+                  class="btn btn-outline"
+                >
+                  <i class="fas fa-refresh"></i>
+                  <span>Reset</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Visualization Panels -->
+        <section class="visualization">
+          <div class="panels-container">
+            <div class="panel input-panel">
+              <div class="panel-header">
+                <h3 class="panel-title">
+                  <i class="fas fa-edit"></i>
+                  Input Polygon
+                </h3>
+                <div class="panel-info">
+                  <span
+                    class="tooltip"
+                    data-tooltip="Left click to draw points, right click to pan, scroll to zoom"
+                  >
+                    <i class="fas fa-info-circle"></i>
+                  </span>
+                </div>
+              </div>
+              <div class="canvas-container">
+                <canvas
+                  id="input-canvas"
+                  width="400"
+                  height="400"
+                ></canvas>
+                <div class="canvas-overlay">
+                  <div class="instructions">
+                    <p><i class="fas fa-mouse"></i> Left click to draw</p>
+                    <p><i class="fas fa-hand-paper"></i> Right click to pan</p>
+                    <p><i class="fas fa-scroll"></i> Scroll to zoom</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel output-panel">
+              <div class="panel-header">
+                <h3 class="panel-title">
+                  <i class="fas fa-vector-square"></i>
+                  Triangulated Result
+                </h3>
+                <div class="panel-status">
+                  <span
+                    id="triangulation-status"
+                    class="status-indicator"
+                    >Ready</span
+                  >
+                </div>
+              </div>
+              <div class="canvas-container">
+                <canvas
+                  id="output-canvas"
+                  width="400"
+                  height="400"
+                ></canvas>
+                <div
+                  class="canvas-overlay"
+                  id="output-overlay"
+                >
+                  <div class="processing-indicator">
+                    <div class="spinner"></div>
+                    <p>Processing triangulation...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Statistics Panel -->
+        <section class="stats-panel">
+          <div class="stats-container">
+            <div class="stat-item">
+              <i class="fas fa-dot-circle"></i>
+              <div class="stat-info">
+                <span class="stat-label">Points</span>
+                <span
+                  id="points-count"
+                  class="stat-value"
+                  >0</span
+                >
+              </div>
+            </div>
+            <div class="stat-item">
+              <i class="fas fa-shapes"></i>
+              <div class="stat-info">
+                <span class="stat-label">Triangles</span>
+                <span
+                  id="triangles-count"
+                  class="stat-value"
+                  >0</span
+                >
+              </div>
+            </div>
+            <div class="stat-item">
+              <i class="fas fa-clock"></i>
+              <div class="stat-info">
+                <span class="stat-label">Process Time</span>
+                <span
+                  id="process-time"
+                  class="stat-value"
+                  >-</span
+                >
+              </div>
+            </div>
+            <div class="stat-item">
+              <i class="fas fa-cogs"></i>
+              <div class="stat-info">
+                <span class="stat-label">Method</span>
+                <span
+                  id="method-used"
+                  class="stat-value"
+                  >-</span
+                >
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <i class="fas fa-cube"></i>
+            <span>3D Mesh Processor</span>
+          </div>
+          <div class="footer-info">
+            <span>Developed by <strong>Jesús Izquierdo</strong></span>
+            <span class="separator">•</span>
+            <span>Advanced Triangulation Platform</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div
+      id="loading-overlay"
+      class="loading-overlay"
+    >
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Processing triangulation...</p>
+      </div>
+    </div>
+
+    <!-- Error/Success Notifications -->
+    <div
+      id="notification-container"
+      class="notification-container"
+    ></div>
+
+    <script
+      type="module"
+      src="src/main.js"
+    ></script>
+  </body>
+</html>
