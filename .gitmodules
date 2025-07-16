@@ -1,0 +1,3 @@
+[submodule "libs/libtriangulation"]
+	path = libs/libtriangulation
+	url = git@github.com:jesusizq/libtriangulation.git
