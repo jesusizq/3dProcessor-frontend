@@ -60,54 +60,56 @@
       <div class="app-container">
         <!-- Hero Section -->
         <section class="hero">
-          <h2 class="hero-title">Polygon Triangulation Visualizer</h2>
-          <p class="hero-subtitle">
-            Upload or draw polygons and see real-time triangulation using
-            backend API or WebAssembly
-          </p>
-        </section>
+          <div class="hero-content">
+            <h2 class="hero-title">Polygon Triangulation Visualizer</h2>
+            <p class="hero-subtitle">
+              Upload or draw polygons and see real-time triangulation using
+              backend API or WebAssembly
+            </p>
+          </div>
 
-        <!-- Control Panel -->
-        <section class="control-panel">
-          <div class="control-group">
-            <div class="file-upload-wrapper">
-              <input
-                type="file"
-                id="file-input"
-                accept=".json"
-                class="file-input"
-              />
-              <label
-                for="file-input"
-                class="file-upload-label"
-              >
-                <i class="fas fa-upload"></i>
-                <span>Upload JSON Points</span>
-              </label>
-            </div>
+          <!-- Control Panel -->
+          <div class="control-panel">
+            <div class="control-group">
+              <div class="file-upload-wrapper">
+                <input
+                  type="file"
+                  id="file-input"
+                  accept=".json"
+                  class="file-input"
+                />
+                <label
+                  for="file-input"
+                  class="file-upload-label"
+                >
+                  <i class="fas fa-upload"></i>
+                  <span>Upload JSON Points</span>
+                </label>
+              </div>
 
-            <div class="action-buttons">
-              <button
-                id="triangulate-btn"
-                class="btn btn-primary"
-              >
-                <i class="fas fa-server"></i>
-                <span>Backend Triangulation</span>
-              </button>
-              <button
-                id="triangulate-wasm-btn"
-                class="btn btn-secondary"
-              >
-                <i class="fas fa-microchip"></i>
-                <span>WASM Triangulation</span>
-              </button>
-              <button
-                id="reset-btn"
-                class="btn btn-outline"
-              >
-                <i class="fas fa-refresh"></i>
-                <span>Reset</span>
-              </button>
+              <div class="action-buttons">
+                <button
+                  id="triangulate-btn"
+                  class="btn btn-primary"
+                >
+                  <i class="fas fa-server"></i>
+                  <span>Backend Triangulation</span>
+                </button>
+                <button
+                  id="triangulate-wasm-btn"
+                  class="btn btn-secondary"
+                >
+                  <i class="fas fa-microchip"></i>
+                  <span>WASM Triangulation</span>
+                </button>
+                <button
+                  id="reset-btn"
+                  class="btn btn-outline"
+                >
+                  <i class="fas fa-refresh"></i>
+                  <span>Reset</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
