@@ -1,6 +1,3 @@
-console.log("renderer.js loaded - V2");
-
-// Helper to create a shader
 function createShader(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);
@@ -12,7 +9,6 @@ function createShader(gl, type, source) {
   gl.deleteShader(shader);
 }
 
-// Helper to create a shader program
 function createProgram(gl, vertexShader, fragmentShader) {
   const program = gl.createProgram();
   gl.attachShader(program, vertexShader);
@@ -25,7 +21,6 @@ function createProgram(gl, vertexShader, fragmentShader) {
   gl.deleteProgram(program);
 }
 
-// Main function to create the renderer instance
 export function createRenderer(
   gl,
   lineVertexSource,
@@ -57,14 +52,11 @@ export function createRenderer(
   // Create a reusable buffer
   const positionBuffer = gl.createBuffer();
 
-  // --- HELPER DRAWING FUNCTIONS ---
-
-  // Helper function to draw points as squares
   const drawPoints = (points, color, matrix) => {
     gl.useProgram(triangleProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-    const pointSize = 0.03;
+    const pointSize = 0.02;
     const halfSize = pointSize / 2;
 
     points.forEach((point) => {
@@ -95,13 +87,11 @@ export function createRenderer(
     });
   };
 
-  // Helper function to draw lines
   const drawLines = (points, closed, color, matrix) => {
     gl.useProgram(lineProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-    // Set line width if supported
-    gl.lineWidth(3.0);
+    gl.lineWidth(2.0);
 
     const positions = points.flat();
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
@@ -111,8 +101,6 @@ export function createRenderer(
     gl.uniformMatrix3fv(lineMatrixUniform, false, matrix);
     gl.drawArrays(closed ? gl.LINE_LOOP : gl.LINE_STRIP, 0, points.length);
   };
-
-  // --- RENDERER API ---
 
   return {
     // Normalizes points to fit within the -1 to 1 clip space
@@ -146,7 +134,6 @@ export function createRenderer(
       gl.clear(gl.COLOR_BUFFER_BIT);
     },
 
-    // Draws a polygon with points
     drawPolygon: (points, closed, color, matrix) => {
       if (!points || points.length === 0) return;
 
@@ -155,7 +142,6 @@ export function createRenderer(
         drawLines(points, closed, color, matrix);
       }
 
-      // Always draw the points
       drawPoints(points, color, matrix);
     },
 
@@ -207,7 +193,6 @@ export function createRenderer(
       gl.useProgram(lineProgram);
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-      // Set line width if supported
       gl.lineWidth(2.0);
 
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);

@@ -1,107 +1,57 @@
-console.log("Enhanced UI utilities loaded");
+import { Notyf } from "../node_modules/notyf/notyf.es.js";
+import { subscribe, EVENTS } from "./events.js";
 
-// Notification System
-let notificationId = 0;
+// Initialize Notyf with custom configuration
+const notyf = new Notyf({
+  duration: 4000,
+  position: {
+    x: "right",
+    y: "top",
+  },
+  types: [
+    {
+      type: "warning",
+      background: "orange",
+      icon: {
+        className: "fas fa-exclamation-triangle",
+        tagName: "i",
+        color: "white",
+      },
+    },
+  ],
+});
 
-export function showNotification(message, type = "info", duration = 5000) {
-  const container = getNotificationContainer();
-  const notification = createNotificationElement(
-    message,
-    type,
-    ++notificationId
-  );
-
-  container.appendChild(notification);
-
-  // Animate in
-  setTimeout(() => {
-    notification.style.transform = "translateY(0)";
-    notification.style.opacity = "1";
-  }, 10);
-
-  // Auto remove
-  setTimeout(() => {
-    removeNotification(notification);
-  }, duration);
-
-  return notificationId;
+export function showNotification(message, type = "info", duration = 4000) {
+  switch (type) {
+    case "error":
+      return notyf.error(message);
+    case "success":
+      return notyf.success(message);
+    case "warning":
+      return notyf.open({
+        type: "warning",
+        message: message,
+        duration: duration,
+      });
+    default:
+      return notyf.success(message);
+  }
 }
 
 export function showError(message) {
-  return showNotification(message, "error", 7000);
+  return notyf.error(message);
 }
 
 export function showSuccess(message) {
-  return showNotification(message, "success", 4000);
+  return notyf.success(message);
 }
 
 export function showWarning(message) {
-  return showNotification(message, "warning", 5000);
-}
-
-function getNotificationContainer() {
-  let container = document.getElementById("notification-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "notification-container";
-    container.className = "notification-container";
-    document.body.appendChild(container);
-  }
-  return container;
-}
-
-function createNotificationElement(message, type, id) {
-  const notification = document.createElement("div");
-  notification.className = `notification ${type}`;
-  notification.style.transform = "translateY(-100%)";
-  notification.style.opacity = "0";
-  notification.style.transition = "all 0.3s ease-out";
-  notification.setAttribute("data-id", id);
-
-  const icon = getNotificationIcon(type);
-
-  notification.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <i class="${icon}" style="font-size: 1.125rem; color: var(--${
-    type === "error"
-      ? "error"
-      : type === "success"
-      ? "success"
-      : type === "warning"
-      ? "warning"
-      : "primary"
-  }-500);"></i>
-      <span style="flex: 1; font-weight: 500;">${message}</span>
-      <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 0.25rem; border-radius: 50%; transition: all 0.15s;">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  `;
-
-  return notification;
-}
-
-function getNotificationIcon(type) {
-  switch (type) {
-    case "error":
-      return "fas fa-exclamation-circle";
-    case "success":
-      return "fas fa-check-circle";
-    case "warning":
-      return "fas fa-exclamation-triangle";
-    default:
-      return "fas fa-info-circle";
-  }
-}
-
-function removeNotification(notification) {
-  notification.style.transform = "translateY(-100%)";
-  notification.style.opacity = "0";
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.parentNode.removeChild(notification);
-    }
-  }, 300);
+  return notyf.open({
+    type: "warning",
+    message: message,
+    duration: 5000,
+  });
 }
 
 // Loading System
@@ -149,7 +99,6 @@ export function updateStatistics(stats) {
 export function updateStat(statId, value) {
   const element = document.getElementById(statId);
   if (element) {
-    // Add a subtle animation when updating
     element.style.transform = "scale(1.1)";
     element.style.transition = "transform 0.2s ease-out";
 
@@ -223,7 +172,6 @@ export function hideProcessingIndicator(canvasId) {
   }
 }
 
-// Enhanced File Upload Feedback
 export function updateFileUploadState(state, fileName = "") {
   const label = document.querySelector(".file-upload-label");
   const span = label?.querySelector("span");
@@ -264,7 +212,6 @@ function resetFileUploadState() {
   }
 }
 
-// Button State Management
 export function setButtonLoading(buttonId, loading = true, originalText = "") {
   const button = document.getElementById(buttonId);
   if (!button) return;
@@ -313,7 +260,6 @@ export function setButtonLoading(buttonId, loading = true, originalText = "") {
   }
 }
 
-// Canvas Instructions
 export function showCanvasInstructions(canvasId, show = true) {
   const canvas = document.getElementById(canvasId);
   if (canvas) {
@@ -343,7 +289,7 @@ export function startTimer() {
 export function getElapsedTime() {
   if (startTime === 0) return "0ms";
   const elapsed = performance.now() - startTime;
-  startTime = 0; // Reset
+  startTime = 0;
 
   if (elapsed < 1000) {
     return `${Math.round(elapsed)}ms`;
@@ -352,9 +298,7 @@ export function getElapsedTime() {
   }
 }
 
-// Initialize Enhanced UI
 export function initializeEnhancedUI() {
-  // Add smooth scrolling to the page
   document.documentElement.style.scrollBehavior = "smooth";
 
   // Add focus styles for accessibility
@@ -370,6 +314,22 @@ export function initializeEnhancedUI() {
 
   console.log("Enhanced UI initialized successfully");
 }
+
+// Set up event subscribers for automatic UI updates
+subscribe(EVENTS.TRIANGULATION_COMPLETED, ({ result, method }) => {
+  const triangleCount = Math.floor(result.length / 3);
+  console.log(
+    `Triangulation completed via ${method}: ${triangleCount} triangles`
+  );
+});
+
+subscribe(EVENTS.DRAWING_STARTED, () => {
+  console.log("Drawing started - UI can react to this event");
+});
+
+subscribe(EVENTS.DRAWING_COMPLETED, ({ points }) => {
+  console.log(`Drawing completed with ${points.length} points`);
+});
 
 // Call initialization when the module loads
 document.addEventListener("DOMContentLoaded", initializeEnhancedUI);

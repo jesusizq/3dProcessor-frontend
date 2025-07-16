@@ -2,6 +2,10 @@ import * as renderer from "./renderer.js";
 import * as ui from "./ui.js";
 import * as api from "./api.js";
 import * as math from "./math.js";
+// Simple distance calculation function
+const calculateDistance = (a, b) =>
+  Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2);
+import { emit, subscribe, EVENTS } from "./events.js";
 
 async function init() {
   console.log("Application starting...");
@@ -193,7 +197,6 @@ async function init() {
       updateStatistics();
     }
 
-    // This needs to be more robust, we need to store the last triangulation result.
     function redrawOutput() {
       outputRenderer.clear();
       if (state.view.output.lastResult) {
@@ -210,19 +213,17 @@ async function init() {
           color
         );
       }
-      // Removed confusing test triangle - output canvas stays empty until triangulation
+
       updateStatistics();
     }
 
     setupCanvasHandlers(inputCanvas, state.view.input, redrawInput);
     setupCanvasHandlers(outputCanvas, state.view.output, redrawOutput);
 
-    // Initial clear and setup
     inputRenderer.clear();
     outputRenderer.clear();
     updateStatistics();
 
-    // Show initial instructions
     ui.showCanvasInstructions("input-canvas", true);
 
     console.log("Renderers initialized.");
@@ -242,6 +243,7 @@ async function init() {
         state.points = [];
         state.view.output.lastResult = null;
         state.view.output.triangulationMethod = null;
+        emit.drawingStarted();
         ui.updateTriangulationStatus("Drawing...", "processing");
         // Hide canvas instructions when drawing starts
         ui.showCanvasInstructions("input-canvas", false);
@@ -251,12 +253,11 @@ async function init() {
 
       if (state.isDrawing && state.points.length > 2) {
         const firstPoint = state.points[0];
-        const distance = Math.sqrt(
-          Math.pow(clipX - firstPoint[0], 2) +
-            Math.pow(clipY - firstPoint[1], 2)
-        );
-        if (distance < 0.1) {
+        const currentPoint = [clipX, clipY];
+        const dist = calculateDistance(currentPoint, firstPoint);
+        if (dist < 0.1) {
           state.isDrawing = false;
+          emit.drawingCompleted(state.points);
           ui.updateTriangulationStatus("Ready", "ready");
           ui.showSuccess("Polygon completed! Ready for triangulation.");
           // Don't show instructions again - let user see their completed polygon
@@ -266,6 +267,7 @@ async function init() {
       }
 
       state.points.push([clipX, clipY]);
+      emit.pointsUpdated(state.points);
       redrawInput();
     });
 
@@ -287,15 +289,18 @@ async function init() {
 
             outputRenderer.clear();
             redrawInput();
+            redrawOutput();
 
             ui.updateFileUploadState("success", file.name);
             ui.updateTriangulationStatus("Ready", "ready");
-            // Don't show instructions when file is loaded - polygon is already there
             ui.showSuccess(`Loaded ${points.length} points from ${file.name}`);
+            ui.showCanvasInstructions("input-canvas", false);
+            emit.fileLoaded(points, file.name);
           } catch (error) {
             ui.updateFileUploadState("error");
             ui.showError("Failed to parse JSON file. Please check the format.");
             console.error("JSON parsing error:", error);
+            emit.fileError(error);
           }
         };
         reader.readAsText(file);
@@ -320,6 +325,7 @@ async function init() {
       ui.setButtonLoading("triangulate-btn", true);
       ui.updateTriangulationStatus("Processing...", "processing");
       ui.startTimer();
+      emit.triangulationStarted("backend");
 
       try {
         const triangulatedMesh = await api.triangulate(pointsToSend);
@@ -346,12 +352,18 @@ async function init() {
 
         ui.updateTriangulationStatus("Complete", "success");
         ui.showSuccess(`Backend triangulation completed in ${processingTime}`);
+        emit.triangulationCompleted(
+          triangulatedMesh,
+          "backend",
+          processingTime
+        );
       } catch (error) {
         ui.updateTriangulationStatus("Error", "error");
         ui.showError(
           "Triangulation failed. Make sure the mesh-processor service is running."
         );
         console.error("Backend triangulation error:", error);
+        emit.triangulationFailed(error, "backend");
       } finally {
         ui.setButtonLoading("triangulate-btn", false);
       }
@@ -379,6 +391,7 @@ async function init() {
       ui.setButtonLoading("triangulate-wasm-btn", true);
       ui.updateTriangulationStatus("Processing...", "processing");
       ui.startTimer();
+      emit.triangulationStarted("wasm");
 
       setTimeout(() => {
         try {
@@ -424,6 +437,7 @@ async function init() {
 
           ui.updateTriangulationStatus("Complete", "success");
           ui.showSuccess(`WASM triangulation completed in ${processingTime}`);
+          emit.triangulationCompleted(result, "wasm", processingTime);
 
           polygon.delete();
           indices.delete();
@@ -431,6 +445,7 @@ async function init() {
           ui.updateTriangulationStatus("Error", "error");
           ui.showError("WASM triangulation failed: " + error.message);
           console.error("WASM Error:", error);
+          emit.triangulationFailed(error, "wasm");
         } finally {
           ui.setButtonLoading("triangulate-wasm-btn", false);
         }
@@ -439,6 +454,7 @@ async function init() {
 
     const resetBtn = document.getElementById("reset-btn");
     resetBtn.addEventListener("click", () => {
+      emit.resetRequested();
       state.points = [];
       state.originalPoints = [];
       state.isDrawing = false;
@@ -465,7 +481,6 @@ async function init() {
       });
 
       ui.updateFileUploadState("default");
-      // Show instructions again after reset
       ui.showCanvasInstructions("input-canvas", true);
       ui.showSuccess("Application reset successfully");
     });
@@ -476,5 +491,4 @@ async function init() {
   }
 }
 
-// Initialize the application
 init();

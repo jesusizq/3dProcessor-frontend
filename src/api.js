@@ -1,5 +1,3 @@
-console.log("api.js loaded");
-
 // Use environment-aware URL configuration
 const MESH_PROCESSOR_URL =
   window.location.hostname === "localhost"
