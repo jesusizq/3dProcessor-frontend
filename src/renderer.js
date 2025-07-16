@@ -145,28 +145,6 @@ export function createRenderer(
       drawPoints(points, color, matrix);
     },
 
-    // Draws the filled triangles of the final mesh
-    drawTriangles: (triangles, points, matrix, color) => {
-      gl.useProgram(triangleProgram);
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-      const vertices = [];
-      triangles.forEach((index) => {
-        vertices.push(points[index][0], points[index][1]);
-      });
-
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(vertices),
-        gl.STATIC_DRAW
-      );
-      gl.enableVertexAttribArray(triPositionAttr);
-      gl.vertexAttribPointer(triPositionAttr, 2, gl.FLOAT, false, 0, 0);
-      gl.uniform4fv(triColorUniform, color);
-      gl.uniformMatrix3fv(triMatrixUniform, false, matrix);
-      gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2);
-    },
-
     // Draws the wireframe of the final mesh
     drawTriangleWireframes: (triangles, points, matrix, color) => {
       if (
