@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Frontend for the 3D Processor application.",
   "scripts": {
-    "build:wasm": "cd ../libtriangulation && mkdir -p build_wasm && cd build_wasm && emcmake cmake .. -DBUILD_WASM=ON && make",
+    "build:wasm": "bash ./build-wasm.sh",
     "start": "python3 -m http.server 8000"
-  },
-  "author": "",
-  "license": "ISC"
+  }
 }
