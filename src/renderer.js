@@ -156,6 +156,11 @@ export function createRenderer(
         return;
       }
 
+      console.log("Drawing triangles:");
+      console.log("Triangle indices:", triangles);
+      console.log("Points:", points);
+      console.log("Number of triangles:", triangles.length / 3);
+
       // Create vertices for all triangles
       const vertices = [];
       for (let i = 0; i < triangles.length; i += 3) {
@@ -163,11 +168,22 @@ export function createRenderer(
         const p2 = points[triangles[i + 1]];
         const p3 = points[triangles[i + 2]];
 
+        console.log(
+          `Triangle ${i / 3}: indices [${triangles[i]}, ${triangles[i + 1]}, ${
+            triangles[i + 2]
+          }]`
+        );
+        console.log(`Triangle ${i / 3}: points`, p1, p2, p3);
+
         if (p1 && p2 && p3) {
           // Add triangle vertices in order
           vertices.push(p1[0], p1[1]);
           vertices.push(p2[0], p2[1]);
           vertices.push(p3[0], p3[1]);
+        } else {
+          console.error(
+            `❌ RENDERER ERROR - Missing point for triangle ${i / 3}`
+          );
         }
       }
 

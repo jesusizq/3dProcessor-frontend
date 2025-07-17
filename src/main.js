@@ -319,8 +319,8 @@ async function init() {
         return;
       }
 
-      const pointsToSend =
-        state.originalPoints.length > 0 ? state.originalPoints : state.points;
+      // Always send normalized coordinates to ensure backend indices match rendering coordinates
+      const pointsToSend = state.points;
 
       ui.setButtonLoading("triangulate-btn", true);
       ui.updateTriangulationStatus("Processing...", "processing");
@@ -328,23 +328,48 @@ async function init() {
       emit.triangulationStarted("backend");
 
       try {
-        const triangulatedMesh = await api.triangulate(pointsToSend);
+        const triangulationResult = await api.triangulate(pointsToSend);
         const processingTime = ui.getElapsedTime();
 
-        console.log("Triangulated mesh:", triangulatedMesh);
+        // Handle both formats: array of indices object with vertices + indices
+        let triangulatedMesh, resolvedVertices;
+        if (Array.isArray(triangulationResult)) {
+          // just indices
+          triangulatedMesh = triangulationResult;
+          resolvedVertices = state.points;
+        } else {
+          // object with vertices and indices
+          triangulatedMesh = triangulationResult.indices;
+          resolvedVertices = triangulationResult.vertices.map((v) => [
+            v[0],
+            v[1],
+          ]);
+        }
+
+        // Check for index bounds errors
+        for (let i = 0; i < triangulatedMesh.length; i++) {
+          if (triangulatedMesh[i] >= resolvedVertices.length) {
+            console.error(
+              `❌ INDEX OUT OF BOUNDS: Index ${triangulatedMesh[i]} >= vertices length ${resolvedVertices.length}`
+            );
+          }
+        }
+
         state.view.output.lastResult = triangulatedMesh;
         state.view.output.triangulationMethod = "backend";
 
         outputRenderer.clear();
+
+        // Use the resolved vertices for rendering
         outputRenderer.drawTriangles(
           triangulatedMesh,
-          state.points,
+          resolvedVertices,
           state.view.output.matrix,
           state.colors.backendTriangulation
         );
 
         ui.updateStatistics({
-          points: state.points.length,
+          points: resolvedVertices.length, // Show resolved vertex count
           triangles: Math.floor(triangulatedMesh.length / 3),
           processTime: processingTime,
           method: "Backend API",
