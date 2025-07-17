@@ -111,6 +111,7 @@ async function init() {
           lastMouseX: 0,
           lastMouseY: 0,
           lastResult: null,
+          lastVertices: null, // Store resolved vertices for redraws
           triangulationMethod: null, // 'wasm' or 'backend'
         },
       },
@@ -199,7 +200,7 @@ async function init() {
 
     function redrawOutput() {
       outputRenderer.clear();
-      if (state.view.output.lastResult) {
+      if (state.view.output.lastResult && state.view.output.lastVertices) {
         // Use the appropriate color based on triangulation method
         const color =
           state.view.output.triangulationMethod === "backend"
@@ -208,7 +209,7 @@ async function init() {
 
         outputRenderer.drawTriangles(
           state.view.output.lastResult,
-          state.points,
+          state.view.output.lastVertices, // Use stored resolved vertices
           state.view.output.matrix,
           color
         );
@@ -242,6 +243,7 @@ async function init() {
         state.isDrawing = true;
         state.points = [];
         state.view.output.lastResult = null;
+        state.view.output.lastVertices = null;
         state.view.output.triangulationMethod = null;
         emit.drawingStarted();
         ui.updateTriangulationStatus("Drawing...", "processing");
@@ -285,6 +287,7 @@ async function init() {
             state.originalPoints = points;
             state.points = inputRenderer.normalizePoints(points);
             state.view.output.lastResult = null;
+            state.view.output.lastVertices = null;
             state.view.output.triangulationMethod = null;
 
             outputRenderer.clear();
@@ -356,6 +359,7 @@ async function init() {
         }
 
         state.view.output.lastResult = triangulatedMesh;
+        state.view.output.lastVertices = resolvedVertices; // Store resolved vertices
         state.view.output.triangulationMethod = "backend";
 
         outputRenderer.clear();
@@ -429,32 +433,51 @@ async function init() {
             polygon.push_back(point);
           });
 
-          const indices = wasmTriangulator.triangulate(polygon);
+          const triangulationResult =
+            wasmTriangulator.triangulateWithVertices(polygon);
 
+          // Extract vertices
+          const resolvedVertices = [];
+          for (let i = 0; i < triangulationResult.vertices.size(); i++) {
+            const vertex = triangulationResult.vertices.get(i);
+            resolvedVertices.push([vertex.x, vertex.y]);
+          }
+
+          // Extract indices
           const result = [];
-          for (let i = 0; i < indices.size(); i++) {
-            result.push(indices.get(i));
+          for (let i = 0; i < triangulationResult.indices.size(); i++) {
+            result.push(triangulationResult.indices.get(i));
           }
 
           const processingTime = ui.getElapsedTime();
 
           console.log("Triangulated indices via WASM:", result);
+          console.log("Resolved vertices via WASM:", resolvedVertices);
+
+          // Check for index bounds errors
+          for (let i = 0; i < result.length; i++) {
+            if (result[i] >= resolvedVertices.length) {
+              console.error(
+                `❌ WASM INDEX OUT OF BOUNDS: Index ${result[i]} >= vertices length ${resolvedVertices.length}`
+              );
+            }
+          }
 
           state.view.output.lastResult = result;
+          state.view.output.lastVertices = resolvedVertices; // Store resolved vertices
           state.view.output.triangulationMethod = "wasm";
 
           outputRenderer.clear();
-          // Ensure points are properly normalized for display
-          const normalizedPoints = state.points; // Already normalized for drawing
+          // Use the resolved vertices for rendering (these match the indices)
           outputRenderer.drawTriangles(
             result,
-            normalizedPoints,
+            resolvedVertices,
             state.view.output.matrix,
             state.colors.wasmTriangulation
           );
 
           ui.updateStatistics({
-            points: state.points.length,
+            points: resolvedVertices.length, // Show resolved vertex count
             triangles: Math.floor(result.length / 3),
             processTime: processingTime,
             method: "WebAssembly",
@@ -465,7 +488,8 @@ async function init() {
           emit.triangulationCompleted(result, "wasm", processingTime);
 
           polygon.delete();
-          indices.delete();
+          triangulationResult.vertices.delete();
+          triangulationResult.indices.delete();
         } catch (error) {
           ui.updateTriangulationStatus("Error", "error");
           ui.showError("WASM triangulation failed: " + error.message);
@@ -491,6 +515,7 @@ async function init() {
       state.view.output.panX = 0;
       state.view.output.panY = 0;
       state.view.output.lastResult = null;
+      state.view.output.lastVertices = null;
       state.view.output.triangulationMethod = null;
       updateMatrix(state.view.output);
 
