@@ -145,6 +145,80 @@ export function createRenderer(
       drawPoints(points, color, matrix);
     },
 
+    // Draws filled triangles
+    drawTriangles: (triangles, points, matrix, color) => {
+      if (
+        !points ||
+        points.length === 0 ||
+        !triangles ||
+        triangles.length === 0
+      ) {
+        return;
+      }
+
+      // Create vertices for all triangles
+      const vertices = [];
+      for (let i = 0; i < triangles.length; i += 3) {
+        const p1 = points[triangles[i]];
+        const p2 = points[triangles[i + 1]];
+        const p3 = points[triangles[i + 2]];
+
+        if (p1 && p2 && p3) {
+          // Add triangle vertices in order
+          vertices.push(p1[0], p1[1]);
+          vertices.push(p2[0], p2[1]);
+          vertices.push(p3[0], p3[1]);
+        }
+      }
+
+      if (vertices.length === 0) return;
+
+      // 1. Draw filled triangles first
+      gl.useProgram(triangleProgram);
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(vertices),
+        gl.STATIC_DRAW
+      );
+      gl.enableVertexAttribArray(triPositionAttr);
+      gl.vertexAttribPointer(triPositionAttr, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform4fv(triColorUniform, color);
+      gl.uniformMatrix3fv(triMatrixUniform, false, matrix);
+      gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2);
+
+      // 2. Draw triangle edges on top with darker color
+      const lines = [];
+      for (let i = 0; i < triangles.length; i += 3) {
+        const p1 = points[triangles[i]];
+        const p2 = points[triangles[i + 1]];
+        const p3 = points[triangles[i + 2]];
+        if (p1 && p2 && p3) {
+          lines.push(p1[0], p1[1], p2[0], p2[1]);
+          lines.push(p2[0], p2[1], p3[0], p3[1]);
+          lines.push(p3[0], p3[1], p1[0], p1[1]);
+        }
+      }
+
+      // Create darker edge color (multiply RGB by 0.6, keep alpha)
+      const edgeColor = [
+        color[0] * 0.6,
+        color[1] * 0.6,
+        color[2] * 0.6,
+        color[3],
+      ];
+
+      gl.useProgram(lineProgram);
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.lineWidth(1.5);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(linePositionAttr);
+      gl.vertexAttribPointer(linePositionAttr, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform4fv(lineColorUniform, edgeColor);
+      gl.uniformMatrix3fv(lineMatrixUniform, false, matrix);
+      gl.drawArrays(gl.LINES, 0, lines.length / 2);
+    },
+
     // Draws the wireframe of the final mesh
     drawTriangleWireframes: (triangles, points, matrix, color) => {
       if (

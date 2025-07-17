@@ -206,7 +206,7 @@ async function init() {
             ? state.colors.backendTriangulation
             : state.colors.wasmTriangulation;
 
-        outputRenderer.drawTriangleWireframes(
+        outputRenderer.drawTriangles(
           state.view.output.lastResult,
           state.points,
           state.view.output.matrix,
@@ -336,7 +336,7 @@ async function init() {
         state.view.output.triangulationMethod = "backend";
 
         outputRenderer.clear();
-        outputRenderer.drawTriangleWireframes(
+        outputRenderer.drawTriangles(
           triangulatedMesh,
           state.points,
           state.view.output.matrix,
@@ -421,7 +421,7 @@ async function init() {
           outputRenderer.clear();
           // Ensure points are properly normalized for display
           const normalizedPoints = state.points; // Already normalized for drawing
-          outputRenderer.drawTriangleWireframes(
+          outputRenderer.drawTriangles(
             result,
             normalizedPoints,
             state.view.output.matrix,
