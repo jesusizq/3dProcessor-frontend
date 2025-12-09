@@ -1,137 +1,120 @@
-# 3D Processor Frontend
+# 🌐 2D Polygon Triangulator (WebGL + WASM Frontend)
 
-This is the frontend for the 3D Processor application. It's a WebGL-based client for interactive polygon and mesh visualization with both backend and WebAssembly (WASM) triangulation support.
+![WebAssembly](https://img.shields.io/badge/WebAssembly-Enabled-purple?logo=webassembly)
+![WebGL](https://img.shields.io/badge/WebGL-2.0-9cf?logo=opengl)
+![JavaScript](https://img.shields.io/badge/ES6+-F7DF1E?logo=javascript&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Features
+<div align="center">
+  <img src="./docs/demo-screenshot.png" alt="Frontend Interface Demo" width="700">
+  <p><em>Interactive geometric processing with real-time WebGL rendering and client-side WASM compute.</em></p>
+</div>
 
-- **Interactive Polygon Drawing**: Draw polygons directly on the canvas using mouse clicks
-- **File Loading**: Load polygons from JSON files containing 2D point arrays
-- **Dual Triangulation Support**:
-  - **Backend Processing**: Send polygons to the mesh-processor microservice for server-side triangulation
-  - **WebAssembly Processing**: Use client-side WASM module for fast, local triangulation
-- **Wireframe Visualization**: View triangulated meshes as wireframe structures to understand the triangulation algorithm
-- **Interactive Viewer**: Zoom and pan both input and output canvases independently
-- **Real-time Processing**: Immediate feedback with loading indicators and error handling
+## 📖 Overview
 
-## Tech Stack
+This is the **frontend client** for the Polygon Triangulator system. It demonstrates a high-performance web architecture that leverages **WebAssembly (WASM)** to run complex C++ geometric algorithms directly in the browser, while also offering a fallback to a REST API microservice.
 
-- **Pure WebGL**: Custom renderer with vertex/fragment shaders for optimal performance
-- **ES6 Modules**: Modern JavaScript architecture with modular design
-- **WebAssembly**: C++ triangulation library compiled to WASM for client-side processing
-- **Event-Driven Architecture**: Decoupled components using mitt event emitter
-- **Professional UI Libraries**:
-  - **gl-matrix**: Optimized matrix operations for WebGL transformations
-  - **notyf**: Professional notification system with animations and accessibility
-  - **mitt**: Lightweight event emitter for component communication
+Built with **vanilla WebGL** (no heavy engines) and **modern ES6 modules**, it serves as a reference implementation for integrating native code into web applications.
 
-## Getting Started
+## 🚀 Engineering Highlights
 
-### Prerequisites
+- **Hybrid Compute Model**: Users can toggle between **Client-side (WASM)** execution for low-latency/offline processing and **Server-side (API)** execution for distributed loads.
+- **Custom WebGL Renderer**: Implements a zero-dependency rendering engine with custom Vertex/Fragment shaders, optimizing performance for geometric primitives.
+- **Shared C++ Codebase**: The core triangulation logic (`libtriangulation`) is shared between the C++ Backend and this Frontend via **Emscripten**, ensuring 100% algorithm consistency.
+- **Event-Driven Architecture**: Uses a decoupled event bus (`mitt`) to separate UI logic, geometric processing, and rendering pipelines.
 
-- **Docker** and **Docker Compose** (recommended)
-- Modern web browser with WebGL support
-- **Node.js and npm** (for dependency management)
-- **Update the git submodules** with `git submodule update --init --recursive`
+## 🛠️ Tech Stack
 
-### Standalone Development
+| Component          | Technology             | Description                                                 |
+| :----------------- | :--------------------- | :---------------------------------------------------------- |
+| **Core Runtime**   | **WebAssembly (WASM)** | Compiled C++ modules for near-native performance.           |
+| **Rendering**      | **WebGL API**          | Custom shader-based renderer for points, lines, and meshes. |
+| **Language**       | **JavaScript (ES6+)**  | Modern, modular JS without build-step complexity.           |
+| **Math**           | `gl-matrix`            | High-performance matrix/vector operations for graphics.     |
+| **Communication**  | `mitt`                 | Tiny functional event emitter for loose coupling.           |
+| **UI Feedback**    | `notyf`                | Toast notifications for async operation status.             |
+| **Infrastructure** | Docker / Nginx         | Production-ready containerized serving.                     |
 
-If you need to run just the frontend without Docker:
+## ⚡ Quick Start
+
+### Option A: Docker (Recommended)
+
+Run the fully containerized environment (served via Nginx).
 
 ```bash
-# Install dependencies first
+# Build and run the frontend container
+docker build -t triangulator-frontend .
+docker run -p 3000:80 triangulator-frontend
+```
+
+Access at `http://localhost:3000`
+
+### Option B: Local Development
+
+Requires Node.js (for serving) and Python (optional alternative).
+
+```bash
+# 1. Install dependencies
 npm install
 
-# Start a local web server (required for ES6 modules)
+# 2. Start local dev server
 npm start
-# or manually
-python -m http.server 8000
-
-# Open in browser
-open http://localhost:8000
+# Server runs on http://localhost:8000
 ```
 
-**Note**: For full functionality, ensure the mesh-processor backend is running.
+> **Note**: For WASM functionality, the `wasm/` directory must be served with correct MIME types (handled automatically by the included servers).
 
-## How to Use
+## 🏗️ Architecture
 
-### Triangulation
+The frontend follows a strictly modular architecture where the **Renderer** is isolated from the **Business Logic**.
 
-- **Triangulate (Backend)**: Uses the mesh-processor microservice
+```mermaid
+graph TD
+    User[User Input] -->|Mouse/File| UI[UI Controller]
+    UI -->|Emit Events| Bus((Event Bus))
 
-  - Sends polygon data via HTTP POST to `/triangulate`
-  - Handles server-side processing with loading indicators
-  - Requires backend service to be running
+    subgraph "Core Logic"
+        Bus -->|REQUEST_TRIANGULATE| Handler[Triangulation Handler]
+        Handler -->|Strategy Pattern| Mode{Compute Mode}
+        Mode -->|Local| WASM["WASM Module <br/> (libtriangulation)"]
+        Mode -->|Remote| API[Backend API]
+    end
 
-- **Triangulate (WASM)**: Uses WebAssembly module
-  - Processes triangulation entirely in the browser
-  - Faster for simple polygons (no network overhead)
-  - Works offline once the page is loaded
+    subgraph "Visualization"
+        Bus -->|UPDATE_DATA| Renderer[WebGL Renderer]
+        Renderer -->|Draw| Canvas[HTML5 Canvas]
+        Renderer -- Uses --> Shaders[GLSL Shaders]
+    end
+```
 
-## Architecture
+## 🧩 Key Features
 
-### Renderer Architecture
+### 1. Dual-Mode Processing
 
-The renderer uses a factory pattern with dual shader programs:
+- **WASM Mode**: Runs `libtriangulation.wasm` in the browser main thread. Zero network latency.
+- **API Mode**: Sends JSON payloads to the C++ Microservice. Useful for benchmarking or thin-client scenarios.
 
-- **Line Program**: For drawing polygon outlines and wireframes
-- **Triangle Program**: For rendering vertex points as small squares
-- **Coordinate System**: Normalized device coordinates (-1 to 1) with gl-matrix transformations
-- **Buffer Management**: Single vertex buffer with dynamic data updates
+### 2. Custom Shader Pipeline
 
-### Event-Driven Architecture
+Unlike libraries like Three.js, this project implements raw WebGL for educational clarity and performance control:
 
-The application uses mitt for decoupled component communication:
+- **`line.vert/frag`**: Handles polygon outlines using `GL_LINES`.
+- **`triangle.vert/frag`**: Renders the resulting mesh using `GL_TRIANGLES`.
 
-- **Event Types**: Predefined constants for drawing, triangulation, file loading, and UI events
-- **Automatic UI Updates**: Components subscribe to relevant events for reactive updates
-- **Better Testability**: Decoupled architecture makes unit testing easier
-- **Maintainability**: Clear separation of concerns between components
+### 3. Build Pipeline
 
-### WebAssembly Integration
-
-The WASM module is built from the C++ `libtriangulation` library:
-
-- **Embind Bindings**: JavaScript/C++ interface using Emscripten embind
-- **Memory Management**: Automatic cleanup of WASM objects
-- **Type Conversion**: JavaScript arrays ↔ C++ vectors via value_object pattern
-- **Error Handling**: Graceful fallback when WASM is unavailable
-
-## WebAssembly Module Development Build
+The project includes scripts to compile the C++ source into WASM artifacts using Dockerized Emscripten, ensuring reproducible builds without local toolchain installation.
 
 ```bash
-# Using the provided build script (requires Emscripten SDK)
-bash ./scripts/build-wasm.sh
-
-  # Or run npm script
-  npm run build:wasm
+# Compiles C++ -> WASM
+npm run build:wasm
 ```
 
-### Module Loading
+## 📄 License
 
-The WASM module is loaded asynchronously in the browser:
+MIT License.
 
-- `libtriangulation.js` - JavaScript wrapper with embedded or separate WASM
-- `libtriangulation.wasm` - WebAssembly binary
+---
 
-## Backend Integration
-
-### Mesh Processor API
-
-- **Endpoint**: `POST http://localhost:8080/triangulate`
-- **Input**: JSON array of 2D points `[[x1, y1], [x2, y2], ...]`
-- **Output**: JSON array of triangulated result indices
-
-### CORS and Development
-
-For standalone development, the backend service allows CORS from all origins (`*`).
-
-## Performance Considerations
-
-- **WASM vs Backend**: WASM is faster for simple polygons, backend better for complex ones
-- **Coordinate Normalization**: Points are normalized to [-1, 1] range for optimal WebGL performance
-- **Buffer Management**: Single vertex buffer reused for all drawing operations
-- **Optimized Libraries**:
-  - **gl-matrix**: High-performance matrix operations optimized for WebGL
-  - **mitt**: Lightweight event emitter (200 bytes) for minimal overhead
-  - **notyf**: Professional notifications with hardware-accelerated animations
-- **Event-Driven Updates**: Reactive UI updates only when state changes, reducing unnecessary renders
+**Part of the 2D Polygon Triangulator System** [GitHub Repository](https://github.com/jesusizq/2DPolygonTriangulator/)
