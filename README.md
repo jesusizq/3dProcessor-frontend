@@ -34,7 +34,7 @@ Built with **vanilla WebGL** (no heavy engines) and **modern ES6 modules**, it s
 | **Math**           | `gl-matrix`            | High-performance matrix/vector operations for graphics.     |
 | **Communication**  | `mitt`                 | Tiny functional event emitter for loose coupling.           |
 | **UI Feedback**    | `notyf`                | Toast notifications for async operation status.             |
-| **Infrastructure** | Docker / Nginx         | Production-ready containerized serving.                     |
+| **Infrastructure** | Docker / Nginx / Caddy | Production-ready Gateway & Serving.         |
 
 ## ⚡ Quick Start
 
